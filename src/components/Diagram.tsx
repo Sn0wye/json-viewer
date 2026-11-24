@@ -1,3 +1,4 @@
+import { Boxes, Braces, Copy, Hand, Info, MousePointerClick, Scan, Sprout, ZoomIn, ZoomOut, type LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes } from 'react';
 import { layout, type Layout, type Measure } from '../lib/layout';
 import type { Tree } from '../lib/tree';
@@ -21,7 +22,7 @@ function fitView(l: Layout, vp: HTMLElement): View {
   return { k, x: Math.max(PAD, (vw - l.width * k) / 2), y: Math.max(PAD, (vh - l.height * k) / 2) };
 }
 
-export function Diagram({ tree, onCopy }: { tree: Tree | null; onCopy: CopyFn }) {
+export function Diagram({ tree, onCopy, onSample }: { tree: Tree | null; onCopy: CopyFn; onSample: () => void }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const nodeEls = useRef(new Map<number, HTMLDivElement>());
   const lastCount = useRef(-1);
@@ -228,27 +229,95 @@ export function Diagram({ tree, onCopy }: { tree: Tree | null; onCopy: CopyFn })
       </div>
 
       {!tree && (
-        <div className="pointer-events-none absolute inset-0 grid place-items-center text-sm text-omni-muted">
-          Cole um JSON à esquerda.
+        <div className="pointer-events-none absolute inset-0 grid place-items-center">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <Braces className="size-8 text-omni-comment" strokeWidth={1.5} aria-hidden />
+            <p className="text-sm text-omni-muted">Cole um JSON no editor para ver o diagrama.</p>
+            <button
+              onClick={onSample}
+              className="pointer-events-auto flex items-center gap-1.5 rounded-md border border-omni-selection px-3 py-1 text-sm text-omni-fg/85 hover:border-omni-purple/60 hover:bg-omni-light focus-visible:outline-2 focus-visible:outline-omni-purple"
+            >
+              <Sprout className="size-3.5 text-omni-green" aria-hidden />
+              Carregar exemplo
+            </button>
+          </div>
         </div>
       )}
 
-      <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-omni-selection bg-omni-light/90 p-1 text-sm text-omni-fg shadow-lg backdrop-blur">
-        <ToolButton onClick={() => zoomCenter(1 / 1.2)} title="Diminuir zoom">−</ToolButton>
-        <span className="w-12 text-center tabular-nums">{Math.round(view.k * 100)}%</span>
-        <ToolButton onClick={() => zoomCenter(1.2)} title="Aumentar zoom">+</ToolButton>
+      <div
+        role="toolbar"
+        aria-label="Zoom"
+        className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-0.5 whitespace-nowrap rounded-lg border border-omni-selection bg-omni-light/90 p-1 text-sm text-omni-fg shadow-lg shadow-black/40 backdrop-blur"
+      >
+        <ToolButton onClick={() => zoomCenter(1 / 1.2)} title="Diminuir zoom" aria-label="Diminuir zoom">
+          <ZoomOut className="size-4" aria-hidden />
+        </ToolButton>
+        <span className="w-11 text-center font-mono text-xs tabular-nums text-omni-fg/80">
+          {Math.round(view.k * 100)}%
+        </span>
+        <ToolButton onClick={() => zoomCenter(1.2)} title="Aumentar zoom" aria-label="Aumentar zoom">
+          <ZoomIn className="size-4" aria-hidden />
+        </ToolButton>
         <ToolButton
           onClick={() => current && setView(fitView(current, viewportRef.current!))}
           title="Ajustar à tela"
         >
-          Ajustar
+          <Scan className="size-4" aria-hidden />
+          <span className="text-xs">Ajustar</span>
         </ToolButton>
-        {tree && <span className="px-2 text-xs text-omni-muted">{tree.nodes.length} blocos</span>}
+        {tree && (
+          <>
+            <span className="mx-1 h-4 w-px bg-omni-selection" aria-hidden />
+            <span className="flex items-center gap-1.5 px-1.5 text-xs text-omni-muted tabular-nums">
+              <Boxes className="size-3.5" aria-hidden />
+              {tree.nodes.length} {tree.nodes.length === 1 ? 'bloco' : 'blocos'}
+            </span>
+          </>
+        )}
+        <span className="mx-1 h-4 w-px bg-omni-selection" aria-hidden />
+        <Help />
+      </div>
+    </div>
+  );
+}
+
+const TIPS: [LucideIcon, string][] = [
+  [Hand, 'Arraste o fundo para mover'],
+  [ZoomIn, 'Role o mouse para dar zoom'],
+  [MousePointerClick, 'Clique num campo para ir até o bloco'],
+  [Copy, 'Clique num valor ou título para copiar'],
+];
+
+/** Dicas de navegação; abre no hover e no foco do teclado. */
+function Help() {
+  return (
+    <div className="group/help relative">
+      <ToolButton aria-label="Dicas de navegação" aria-describedby="diagram-tips">
+        <Info className="size-4" aria-hidden />
+      </ToolButton>
+      <div
+        id="diagram-tips"
+        role="tooltip"
+        className="invisible absolute right-0 bottom-full mb-2 w-max rounded-lg border border-omni-selection bg-omni-lighter p-2 opacity-0 shadow-lg shadow-black/40 transition-opacity group-focus-within/help:visible group-focus-within/help:opacity-100 group-hover/help:visible group-hover/help:opacity-100"
+      >
+        <ul className="flex flex-col gap-1.5 text-xs text-omni-fg/85">
+          {TIPS.map(([Icon, tip]) => (
+            <li key={tip} className="flex items-center gap-2">
+              <Icon className="size-3.5 shrink-0 text-omni-purple" aria-hidden />
+              {tip}
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
 }
 
 function ToolButton(props: ButtonHTMLAttributes<HTMLButtonElement>) {
-  return <button {...props} className="rounded px-2.5 py-1 hover:bg-white/10" />;
+  return (
+    <button
+      {...props}
+      className="flex items-center gap-1.5 rounded-md px-2 py-1 text-omni-fg/80 transition-colors hover:bg-white/8 hover:text-omni-fg focus-visible:outline-2 focus-visible:outline-omni-purple"
+    />
+  );
 }

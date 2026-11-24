@@ -1,4 +1,5 @@
-import { memo } from 'react';
+import { Braces, Brackets, ChevronRight, Copy } from 'lucide-react';
+import { memo, type MouseEvent } from 'react';
 import type { Box } from '../lib/layout';
 import type { Primitive, TreeNode } from '../lib/tree';
 
@@ -25,11 +26,27 @@ function Value({ v }: { v: Primitive }) {
   );
 }
 
-function badge(node: TreeNode) {
-  if (node.kind === 'array') return `array · ${node.size}`;
-  if (node.kind === 'object') return `object · ${node.size}`;
-  const v = node.rows[0].value;
-  return v === null ? 'null' : typeof v;
+function Badge({ node }: { node: TreeNode }) {
+  if (node.kind === 'value') {
+    const v = node.rows[0].value;
+    return <span className="text-omni-muted">{v === null ? 'null' : typeof v}</span>;
+  }
+  const Icon = node.kind === 'array' ? Brackets : Braces;
+  const noun = node.kind === 'array' ? (node.size === 1 ? 'item' : 'itens') : node.size === 1 ? 'chave' : 'chaves';
+  return (
+    <span className="flex items-center gap-1 text-omni-muted" title={`${node.size} ${noun}`}>
+      <Icon className="size-3" aria-hidden />
+      <span className="tabular-nums">{node.size}</span>
+    </span>
+  );
+}
+
+/** Reinicia a animação de "copiado" na linha clicada. */
+function flash(e: MouseEvent<HTMLElement>) {
+  const el = e.currentTarget;
+  el.classList.remove('row-copied');
+  void el.offsetWidth;
+  el.classList.add('row-copied');
 }
 
 interface Props {
@@ -57,15 +74,22 @@ export const NodeCard = memo(function NodeCard({ node, box, highlighted, registe
       <div
         data-head
         title={`${node.path} (clique para copiar o caminho)`}
-        onClick={() => onCopy(node.path, 'Caminho')}
-        className="flex cursor-pointer items-center gap-3 border-b border-omni-selection px-3 py-1.5"
+        onClick={(e) => {
+          flash(e);
+          onCopy(node.path, 'Caminho');
+        }}
+        className="group/head flex cursor-pointer items-center gap-2 border-b border-omni-selection px-3 py-1.5"
         style={{ borderTop: `2px solid ${accent}`, background: `${accent}14` }}
       >
         <span className="truncate font-semibold" style={{ color: accent }}>
           {node.label}
         </span>
-        <span className="ml-auto shrink-0 rounded bg-white/5 px-1.5 py-0.5 text-[10px] tracking-wide text-omni-muted uppercase">
-          {badge(node)}
+        <Copy
+          className="size-3 shrink-0 text-omni-muted opacity-0 transition-opacity group-hover/head:opacity-100"
+          aria-hidden
+        />
+        <span className="ml-auto shrink-0 pl-2 text-[11px]">
+          <Badge node={node} />
         </span>
       </div>
 
@@ -83,17 +107,24 @@ export const NodeCard = memo(function NodeCard({ node, box, highlighted, registe
               key={i}
               data-child={child?.id}
               title={child ? `Ir para ${child.path}` : text!}
-              onClick={() => (child ? onFocusChild(child.id) : onCopy(text!, 'Valor'))}
+              onClick={(e) => {
+                if (child) return onFocusChild(child.id);
+                flash(e);
+                onCopy(text!, 'Valor');
+              }}
               className="group flex min-w-0 cursor-pointer items-center gap-4 px-3 py-0.5 hover:bg-white/5"
             >
               {row.key !== null && <span className="shrink-0 text-omni-purple">{row.key}:</span>}
               <span className="ml-auto min-w-0 truncate text-right">
                 {child ? (
-                  <span className="text-omni-muted group-hover:text-omni-fg">
+                  <span className="inline-flex items-center text-omni-muted group-hover:text-omni-fg">
                     {child.kind === 'array'
                       ? `[${child.size} ${child.size === 1 ? 'item' : 'itens'}]`
                       : `{${child.size} ${child.size === 1 ? 'chave' : 'chaves'}}`}
-                    <span className="ml-1 opacity-0 group-hover:opacity-100">→</span>
+                    <ChevronRight
+                      className="-mr-1 ml-0.5 size-3 transition-transform group-hover:translate-x-0.5"
+                      aria-hidden
+                    />
                   </span>
                 ) : (
                   <Value v={row.value!} />

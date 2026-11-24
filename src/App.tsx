@@ -1,3 +1,4 @@
+import { CircleAlert, CircleCheck, CircleDashed, Copy, Eraser, FoldHorizontal, Sprout, WandSparkles, type LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ButtonHTMLAttributes } from 'react';
 import { Diagram } from './components/Diagram';
 import { Editor } from './components/Editor';
@@ -51,7 +52,7 @@ export default function App() {
   const [text, setText] = useState(() => localStorage.getItem(STORAGE_KEY) ?? SAMPLE);
   const [parsed, setParsed] = useState<Parsed>(() => parse(text));
   const [tree, setTree] = useState<Tree | null>(() => (parsed.ok ? parsed.tree : null));
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean; id: number } | null>(null);
   const [editorWidth, setEditorWidth] = useEditorWidth();
   const toastTimer = useRef<number>(undefined);
 
@@ -66,8 +67,8 @@ export default function App() {
     return () => window.clearTimeout(t);
   }, [text]);
 
-  const notify = useCallback((msg: string) => {
-    setToast(msg);
+  const notify = useCallback((msg: string, ok = true) => {
+    setToast({ msg, ok, id: Date.now() });
     window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(null), 1600);
   }, []);
@@ -78,7 +79,7 @@ export default function App() {
         await navigator.clipboard.writeText(value);
         notify(`${what} copiado`);
       } catch {
-        notify('Não foi possível copiar');
+        notify('Não foi possível copiar', false);
       }
     },
     [notify],
@@ -88,7 +89,7 @@ export default function App() {
     try {
       setText(JSON.stringify(JSON.parse(text), null, indent));
     } catch {
-      notify('JSON inválido — corrija antes de formatar');
+      notify('JSON inválido: corrija antes de formatar', false);
     }
   };
 
@@ -101,53 +102,126 @@ export default function App() {
     }
   };
 
+  const lines = text.split('\n').length;
+  const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
+
   return (
     <div className="flex h-full flex-col bg-omni-bg text-omni-fg">
-      <header className="flex items-center gap-2 border-b border-omni-selection px-4 py-2">
-        <h1 className="mr-4 font-mono text-sm font-semibold text-omni-purple">{'{ }'} JSON Viewer</h1>
-        <Btn onClick={() => reformat(2)} title="Ctrl+Enter">Formatar</Btn>
-        <Btn onClick={() => reformat(undefined)}>Minificar</Btn>
-        <Btn onClick={() => copy(text, 'JSON')}>Copiar</Btn>
-        <Btn onClick={() => setText('')}>Limpar</Btn>
-        <Btn onClick={() => setText(SAMPLE)}>Exemplo</Btn>
-        <span className="ml-auto text-xs text-omni-muted">
-          Arraste para mover · roda do mouse para zoom · clique num campo para ir até o bloco · num valor para copiar
-        </span>
+      <header className="flex items-center gap-3 border-b border-omni-selection px-3 py-2">
+        <h1 className="mr-3 flex items-center gap-2 text-sm font-semibold tracking-tight">
+          <Logo />
+          <span>JSON Viewer</span>
+        </h1>
+        <div className="flex items-center gap-1">
+          <Btn icon={WandSparkles} onClick={() => reformat(2)} title={`Formatar (${isMac ? '⌘' : 'Ctrl'}+Enter)`}>
+            Formatar
+            <kbd className="ml-1 rounded border border-omni-selection px-1 font-sans text-[11px] leading-4 text-omni-muted">
+              {isMac ? '⌘↵' : 'Ctrl ↵'}
+            </kbd>
+          </Btn>
+          <Btn icon={FoldHorizontal} onClick={() => reformat(undefined)}>
+            Minificar
+          </Btn>
+          <Btn icon={Copy} onClick={() => copy(text, 'JSON')}>
+            Copiar
+          </Btn>
+        </div>
+        <span className="h-5 w-px bg-omni-selection" aria-hidden />
+        <div className="flex items-center gap-1">
+          <Btn icon={Eraser} onClick={() => setText('')}>
+            Limpar
+          </Btn>
+          <Btn icon={Sprout} onClick={() => setText(SAMPLE)}>
+            Exemplo
+          </Btn>
+        </div>
       </header>
 
       <main className="flex min-h-0 flex-1">
         <section className="flex shrink-0 flex-col overflow-hidden" style={{ width: editorWidth }}>
           <Editor value={text} onChange={setText} onPasteAll={pasteAll} onFormat={() => reformat(2)} />
           <footer
-            className={`shrink-0 border-t border-omni-selection px-3 py-1.5 font-mono text-xs ${parsed.ok ? 'text-omni-green' : 'text-omni-red'}`}
+            role="status"
+            className={`flex shrink-0 items-center gap-2 overflow-hidden whitespace-nowrap border-t border-omni-selection px-3 py-1.5 font-mono text-xs ${
+              !parsed.ok ? 'bg-omni-red/8 text-omni-red' : parsed.tree ? 'text-omni-green' : 'text-omni-muted'
+            }`}
           >
-            {parsed.ok
-              ? parsed.tree
-                ? `✓ JSON válido · ${text.split('\n').length} linhas · ${text.length} caracteres`
-                : 'Vazio'
-              : `✗ ${parsed.error}`}
+            {parsed.ok ? (
+              parsed.tree ? (
+                <>
+                  <CircleCheck className="size-3.5 shrink-0" aria-hidden />
+                  <span>JSON válido</span>
+                  <span className="ml-auto truncate text-omni-muted tabular-nums">
+                    {lines} {lines === 1 ? 'linha' : 'linhas'}
+                    <span className="mx-2 text-omni-selection">/</span>
+                    {text.length.toLocaleString('pt-BR')} caracteres
+                  </span>
+                </>
+              ) : (
+                <>
+                  <CircleDashed className="size-3.5 shrink-0" aria-hidden />
+                  <span>Editor vazio</span>
+                </>
+              )
+            ) : (
+              <>
+                <CircleAlert className="size-3.5 shrink-0" aria-hidden />
+                <span className="truncate" title={parsed.error}>
+                  {parsed.error}
+                </span>
+              </>
+            )}
           </footer>
         </section>
 
         <Splitter onResize={setEditorWidth} />
 
-        <Diagram tree={tree} onCopy={copy} />
+        <Diagram tree={tree} onCopy={copy} onSample={() => setText(SAMPLE)} />
       </main>
 
       {toast && (
-        <div className="fixed top-14 right-4 rounded-md border border-omni-selection bg-omni-lighter px-3 py-1.5 text-sm shadow-lg">
-          {toast}
+        <div
+          key={toast.id}
+          role="status"
+          className={`toast fixed top-14 right-4 flex items-center gap-2 rounded-md border bg-omni-lighter py-1.5 pr-3 pl-2.5 text-sm shadow-lg shadow-black/40 ${
+            toast.ok ? 'border-omni-green/30' : 'border-omni-red/40'
+          }`}
+        >
+          {toast.ok ? (
+            <CircleCheck className="size-4 text-omni-green" aria-hidden />
+          ) : (
+            <CircleAlert className="size-4 text-omni-red" aria-hidden />
+          )}
+          {toast.msg}
         </div>
       )}
     </div>
   );
 }
 
-function Btn(props: ButtonHTMLAttributes<HTMLButtonElement>) {
+/** Marca: chaves com um nó no meio, o JSON virando diagrama. */
+function Logo() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="none" aria-hidden>
+      <path
+        d="M8 3.5c-2 0-2.75 1-2.75 2.75v2.5C5.25 10.5 4.5 12 3 12c1.5 0 2.25 1.5 2.25 3.25v2.5c0 1.75.75 2.75 2.75 2.75M16 3.5c2 0 2.75 1 2.75 2.75v2.5c0 1.75.75 3.25 2.25 3.25-1.5 0-2.25 1.5-2.25 3.25v2.5c0 1.75-.75 2.75-2.75 2.75"
+        className="stroke-omni-purple"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+      <circle cx="12" cy="12" r="2.25" className="fill-omni-pink" />
+    </svg>
+  );
+}
+
+function Btn({ icon: Icon, children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { icon: LucideIcon }) {
   return (
     <button
       {...props}
-      className="rounded-md border border-omni-selection bg-omni-light px-3 py-1 text-sm hover:border-omni-purple/60 hover:bg-omni-lighter"
-    />
+      className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-sm text-omni-fg/85 transition-colors hover:bg-omni-light hover:text-omni-fg focus-visible:outline-2 focus-visible:outline-omni-purple active:bg-omni-lighter"
+    >
+      <Icon className="size-3.5 text-omni-muted" strokeWidth={2} aria-hidden />
+      {children}
+    </button>
   );
 }

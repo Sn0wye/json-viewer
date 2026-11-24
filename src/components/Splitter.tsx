@@ -49,7 +49,7 @@ export function Splitter({ onResize }: { onResize: (width: number) => void }) {
     <div
       role="separator"
       aria-orientation="vertical"
-      title="Arraste para redimensionar · duplo clique para resetar"
+      title="Arraste para redimensionar. Duplo clique restaura o tamanho"
       onPointerDown={start}
       onDoubleClick={() => onResize(clampWidth(defaultWidth()))}
       className="group relative z-10 w-1 shrink-0 cursor-col-resize bg-omni-selection transition-colors hover:bg-omni-purple active:bg-omni-purple"
