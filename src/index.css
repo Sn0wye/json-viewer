@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* Paleta do tema "Omni Owl (Minimal Italics)" do VS Code local (guilhermerodz.omni-owl).
+   Nomes seguem a cor de fato. */
+@theme {
+  --font-mono: "JetBrainsMono Nerd Font", "JetBrains Mono", ui-monospace, monospace;
+  --color-omni-bg: #13111b; /* editor.background, sideBar.background */
+  --color-omni-dark: #15121e; /* statusBar.background */
+  --color-omni-light: #201b2d; /* editor.lineHighlightBackground */
+  --color-omni-lighter: #2a2438;
+  --color-omni-selection: #3c3550; /* panel.border */
+  --color-omni-comment: #5a4b81;
+  --color-omni-muted: #746699; /* comment */
+  --color-omni-fg: #e1e1e6;
+  --color-omni-cyan: #78d1e1; /* constant */
+  --color-omni-purple: #988bc7; /* support (chave de JSON) */
+  --color-omni-green: #67e480;
+  --color-omni-orange: #e89e64;
+  --color-omni-pink: #ff79c6;
+  --color-omni-red: #e96379;
+  --color-omni-yellow: #e7de79; /* string */
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
