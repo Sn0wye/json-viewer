@@ -113,10 +113,10 @@ export default function App() {
           <span>JSON Viewer</span>
         </h1>
         <div className="flex items-center gap-1">
-          <Btn icon={WandSparkles} onClick={() => reformat(2)} title={`Formatar (${isMac ? '⌘' : 'Ctrl'}+Enter)`}>
+          <Btn icon={WandSparkles} onClick={() => reformat(2)} title={`Formatar (${isMac ? '⇧⌥F' : 'Shift+Alt+F'})`}>
             Formatar
             <kbd className="ml-1 rounded border border-omni-selection px-1 font-sans text-[11px] leading-4 text-omni-muted">
-              {isMac ? '⌘↵' : 'Ctrl ↵'}
+              {isMac ? '⇧⌥F' : 'Shift Alt F'}
             </kbd>
           </Btn>
           <Btn icon={FoldHorizontal} onClick={() => reformat(undefined)}>

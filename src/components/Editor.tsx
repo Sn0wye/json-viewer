@@ -27,7 +27,8 @@ export function Editor({ value, onChange, onPasteAll, onFormat }: Props) {
   props.current = { onPasteAll, onFormat };
 
   const handleMount: OnMount = (editor, m) => {
-    editor.addCommand(m.KeyMod.CtrlCmd | m.KeyCode.Enter, () => props.current.onFormat());
+    // Mesmo atalho de formatar do VS Code; substitui o formatador nativo do Monaco.
+    editor.addCommand(m.KeyMod.Shift | m.KeyMod.Alt | m.KeyCode.KeyF, () => props.current.onFormat());
     editor.onDidPaste((e) => {
       const model = editor.getModel();
       if (model && e.range.equalsRange(model.getFullModelRange())) {
