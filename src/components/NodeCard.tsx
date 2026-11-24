@@ -122,7 +122,7 @@ export const NodeCard = memo(function NodeCard({ node, box, highlighted, registe
                       ? `[${child.size} ${child.size === 1 ? 'item' : 'itens'}]`
                       : `{${child.size} ${child.size === 1 ? 'chave' : 'chaves'}}`}
                     <ChevronRight
-                      className="-mr-1 ml-0.5 size-3 transition-transform group-hover:translate-x-0.5"
+                      className="ml-0.5 size-3 shrink-0"
                       aria-hidden
                     />
                   </span>
